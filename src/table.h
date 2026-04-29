@@ -20,7 +20,10 @@ HashTable* TableInit(size_t table_size, HashFunction func);
 HashTable* CreateTable(List* words, size_t table_size, HashFunction func);
 
 void TableSearch(HashTable* table, List* search_list, const char* output_file);
+
 void MeasureLength(const char* length_file, size_t table_size, HashFunction func, List* words);
+uint64_t MeasureTime(HashTable* table, List* search_list);
+
 char* TableSearch(HashTable* table, char* word);
 void TableDestroy(HashTable* table);
 

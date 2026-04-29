@@ -13,8 +13,7 @@ SRC = main.cpp str.cpp hash.cpp table.cpp list.cpp
 OBJ = $(addprefix $(OBJDIR)/, $(SRC:.cpp=.o))
 SRCDIR = src
 OBJDIR = obj
-LOGDIR = log
-LOGDIR = data
+LOGDIR = order-only-data
 EXE = Hash
 
 all: $(DIR_TARGET) $(EXE)
@@ -27,7 +26,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@$(CXX) $(FLAGS) -c $< -o $@
 
 $(DIR_TARGET):
-	@mkdir -p $(LOGDIR)
+	@mkdir $(LOGDIR)
 
 .PHONY: clean
 

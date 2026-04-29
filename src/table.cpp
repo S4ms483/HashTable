@@ -8,9 +8,10 @@
 #include <immintrin.h>
 
 #include "hash.h"
-// #include "list.h"
 #include "str.h"
                 
+//FIXME - dndebug
+//FIXME - strlen on intrinsics
 
 HashTable* TableInit(size_t table_size, HashFunction function) {
     HashTable* table = (HashTable*)calloc(1, sizeof(HashTable));
@@ -36,7 +37,6 @@ HashTable* CreateTable(List* words, size_t table_size, HashFunction function) {
 
     for (size_t i = 0; i < words_amount; i++) {
         index = table->function((const uint8_t*)words_array[i], strlen(words_array[i]));
-// fprintf(stderr, "index = %d\n", index);
         if (!ListAppend(table->lists[index], words_array[i])) (table->tSize)--;
     }
 
@@ -46,18 +46,9 @@ fprintf(stderr, "words amount = %lu\n", table->tSize);
 }
 
 
-char* TableSearch(HashTable* table, char* word) {
-    assert(table && word);
-
-    uint32_t index = table->function((const uint8_t*)word, strlen(word));
-    if (index >= (table->lists[index])->lSize) return NULL;
-    return ListSearch(table->lists[index], word);
-}
-
-
 void MeasureLength(const char* length_file, size_t table_size, HashFunction function, List* words) {
     assert(length_file);
-
+    
     HashTable* table = CreateTable(words, table_size, function);
 
     size_t* len_array = (size_t*)calloc(table_size, sizeof(size_t));
@@ -67,8 +58,34 @@ void MeasureLength(const char* length_file, size_t table_size, HashFunction func
     }
 
     ArrayOutput(length_file, len_array, table_size);
-    free(len_array);
     TableDestroy(table);
+    free(len_array);
+}
+
+
+uint64_t MeasureTime(HashTable* table, List* search_list) {
+    assert(table && search_list);
+
+    size_t words_amount = search_list->lSize; 
+    char** array = search_list->array;
+
+    uint64_t start_time = __rdtsc();
+    for (size_t i = 0; i < words_amount; i++) {
+        TableSearch(table, array[i]);
+    }
+    uint64_t end_time = __rdtsc();
+
+    TableDestroy(table);
+    return end_time - start_time;
+}
+
+
+char* TableSearch(HashTable* table, char* word) {
+    assert(table && word);
+
+    uint32_t index = table->function((const uint8_t*)word, strlen(word));
+    if (index >= (table->lists[index])->lSize) return NULL;
+    return ListSearch(table->lists[index], word);
 }
 
 
