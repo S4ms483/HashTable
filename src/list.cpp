@@ -4,8 +4,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <immintrin.h>
 
 #include "str.h"
+
 
 List* ListInit(char** array, size_t size, size_t capacity) {
     List* list = (List*)calloc(1, sizeof(List));
@@ -55,9 +57,32 @@ List* CreateList(const char* input_file, const char* output_file) {
 bool ListAppend(List* list, char* word) {
     assert(word && list->array && list->lCapacity);
 
-    for (size_t i = 0; i < list->lSize; i++) {
-        if (!strcmp(list->array[i], word)) return false;
+    size_t l_size = list->lSize;
+    char** array = list->array;
+
+    #ifdef SIMD_OPT
+    for (size_t i = 0; i < (l_size/4) * 4; i += 4) {
+        int cmp1 = SimdStrcmp(array[i], word); 
+        int cmp2 = SimdStrcmp(array[i + 1], word); 
+        int cmp3 = SimdStrcmp(array[i + 2], word); 
+        int cmp4 = SimdStrcmp(array[i + 3], word);
+
+        if ((!cmp1) | (!cmp2) | (!cmp3) | (!cmp4)) return false;
     }
+
+    for (size_t i = (l_size/4) * 4; i < l_size; i++) {
+        bool cmp = SimdStrcmp(array[i], word);
+        if (!cmp) return false;
+    }
+
+    #else 
+
+    for (size_t i = 0; i < l_size; i++) {
+        bool cmp = strcmp(array[i], word);
+        if (!cmp) return false;
+    }
+
+    #endif
 
     if (list->lSize == list->lCapacity) {
         list->array = (char**)realloc(list->array, list->lCapacity * 2 * sizeof(char*));
@@ -73,10 +98,37 @@ bool ListAppend(List* list, char* word) {
 char* ListSearch(List* list, const char* word) {
     assert(list && word);
 
-    size_t list_size = list->lSize;
-    for (size_t i = 0; i < list_size; i++) {
-        if (!strcmp(list->array[i], word)) return list->array[i];
+    size_t l_size = list->lSize;
+    char** array = list->array;
+
+    #ifdef SIMD_OPT
+
+    for (size_t i = 0; i < (l_size/4) * 4; i += 4) {
+        int cmp1 = SimdStrcmp(array[i], word); 
+        int cmp2 = SimdStrcmp(array[i + 1], word); 
+        int cmp3 = SimdStrcmp(array[i + 2], word); 
+        int cmp4 = SimdStrcmp(array[i + 3], word);
+
+        
+        if ((!cmp1) | (!cmp2) | (!cmp3) | (!cmp4)) {
+            size_t index = (!cmp2) + (!cmp3) * 2 + (!cmp4) * 3;
+            return array[i + index];
+        }
     }
+
+    for (size_t i = (l_size/4) * 4; i < l_size; i++) {
+        bool cmp = SimdStrcmp(array[i], word);
+        if (!cmp) return array[i];
+    }
+
+    #else
+
+    for (size_t i = 0; i < l_size; i++) {
+        bool cmp = strcmp(array[i], word);
+        if (!cmp) return array[i];
+    }
+
+    #endif
 
     return NULL;
 }

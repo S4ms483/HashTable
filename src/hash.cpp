@@ -62,8 +62,7 @@ uint32_t RolHash(const uint8_t* data, size_t len) {
     assert(data);
 
     uint32_t letter = data[0];
-    uint32_t result = letter;
-
+    uint32_t result = letter; 
     
     letter = data[1];
     
@@ -79,6 +78,8 @@ uint32_t RolHash(const uint8_t* data, size_t len) {
 uint32_t CRC32(const uint8_t* data, size_t len) {
     assert(data);
     uint32_t result = 5381;
+
+    // #ifdef 
 
     for (size_t i = 0; i < len; i++) {
         result = result ^ data[i];

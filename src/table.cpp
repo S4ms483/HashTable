@@ -10,8 +10,6 @@
 #include "hash.h"
 #include "str.h"
                 
-//FIXME - dndebug
-//FIXME - strlen on intrinsics
 
 HashTable* TableInit(size_t table_size, HashFunction function) {
     HashTable* table = (HashTable*)calloc(1, sizeof(HashTable));
@@ -68,15 +66,24 @@ uint64_t MeasureTime(HashTable* table, List* search_list) {
 
     size_t words_amount = search_list->lSize; 
     char** array = search_list->array;
+    uint64_t start_time;
+    uint64_t end_time;
 
-    uint64_t start_time = __rdtsc();
-    for (size_t i = 0; i < words_amount; i++) {
-        TableSearch(table, array[i]);
+    uint64_t time_sum = 0;
+    uint64_t n_searches = 1000;
+
+    for (uint64_t i = 0; i < n_searches; i++) {
+        start_time = __rdtsc();
+        for (size_t j = 0; j < words_amount; j++) {
+            TableSearch(table, array[j]);
+        }
+        end_time = __rdtsc();
+
+        time_sum += end_time - start_time;
     }
-    uint64_t end_time = __rdtsc();
 
     TableDestroy(table);
-    return end_time - start_time;
+    return time_sum/n_searches;
 }
 
 

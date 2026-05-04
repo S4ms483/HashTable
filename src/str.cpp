@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#include <stdint.h>
+
 #include <ctype.h>
 
 
@@ -19,7 +22,7 @@ int ExtractWords(const char* input_file, const char* output_file) {
 
     int amount = 0;
 
-    int symbol;
+    int symbol = 0;
     bool is_alpha; 
     while (symbol != EOF) {
         symbol = fgetc(input_ptr);

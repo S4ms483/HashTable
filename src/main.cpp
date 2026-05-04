@@ -17,9 +17,9 @@ int main() {
     // MeasureLength("data/rolHash.txt", 4001, RolHash, words_list);
     // MeasureLength("data/crc32.txt", 4001, CRC32, words_list);
 
-    // HashTable* crc32_table = CreateTable(words_list, 4001, CRC32);
-    // uint64_t time = MeasureTime(crc32_table, words_list);
-    // printf("time = %lu\n", time);
+    HashTable* crc32_table = CreateTable(words_list, 4001, CRC32);
+    uint64_t time = MeasureTime(crc32_table, words_list);
+    printf("time = %lu\n", time);
 
     ListDestroy(words_list);
 }
