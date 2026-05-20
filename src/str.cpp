@@ -8,7 +8,10 @@
 #include <stdint.h>
 
 #include <ctype.h>
-
+#include <emmintrin.h>
+#include <immintrin.h>
+#include <x86intrin.h>
+#include <stdint.h>
 
 
 int ExtractWords(const char* input_file, const char* output_file) {
@@ -44,6 +47,17 @@ int ExtractWords(const char* input_file, const char* output_file) {
     fclose(output_ptr);
 
     return amount;
+}
+
+
+int Strcmp(const char* str1, const char* str2) {
+    assert(str1 && str2);
+
+    for (size_t i = 0; i < 32; i++) {
+        if (str1[i] != str2[i]) return 1; 
+    }
+
+    return 0;
 }
 
 

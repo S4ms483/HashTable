@@ -19,6 +19,7 @@ HashTable* TableInit(size_t table_size, HashFunction function) {
     
     table->nLists = table_size;
     table->function = function;
+    table->words = NULL;
 
     return table;
 }
@@ -31,16 +32,59 @@ HashTable* CreateTable(List* words, size_t table_size, HashFunction function) {
     size_t words_amount = words->lSize;
     char** words_array = words->array;
 
-    table->tSize = words_amount;
+    table->nWords = words_amount;
 
+    
     for (size_t i = 0; i < words_amount; i++) {
+        #ifdef SIMD_LEN
+        
+        index = table->function((const uint8_t*)words_array[i], SimdStrlen(words_array[i]));
+    
+        #else 
+    
         index = table->function((const uint8_t*)words_array[i], strlen(words_array[i]));
-        if (!ListAppend(table->lists[index], words_array[i])) (table->tSize)--;
+    
+        #endif
+        if (!ListAppend(table->lists[index % mod], words_array[i])) (table->nWords)--;
     }
 
-fprintf(stderr, "words amount = %lu\n", table->tSize);
+    MoveLists(table);
+
+fprintf(stderr, "words amount = %lu\n", table->nWords);
 
     return table;
+}
+
+
+void MoveLists(HashTable* table) {
+    assert(table);
+
+    char* words = (char*)calloc(table->nWords * wordLen, sizeof(char));
+    size_t index = 0;
+    size_t nLists = table->nLists;
+
+    for (size_t i = 0; i < nLists; i++) {
+        char** array = ((table->lists)[i])->array;
+        size_t array_size = ((table->lists)[i])->lSize;
+
+        size_t* indexes_array = (size_t*)calloc(array_size, sizeof(size_t));
+
+        for (size_t j = 0; j < array_size; j++) {
+            #ifdef SIMD_LEN
+            size_t word_len = SimdStrlen(array[j]) + 1;
+            #else
+            size_t word_len = strlen(array[j]) + 1;
+            #endif
+
+            strcpy(&words[index], array[j]);
+            indexes_array[j] = word_len;
+            index += word_len;
+        }
+
+        ((table->lists)[i])->offsets = indexes_array;
+    }
+
+    table->words = words;
 }
 
 
@@ -70,7 +114,7 @@ uint64_t MeasureTime(HashTable* table, List* search_list) {
     uint64_t end_time;
 
     uint64_t time_sum = 0;
-    uint64_t n_searches = 1000;
+    uint64_t n_searches = 100;
 
     for (uint64_t i = 0; i < n_searches; i++) {
         start_time = __rdtsc();
@@ -90,15 +134,27 @@ uint64_t MeasureTime(HashTable* table, List* search_list) {
 char* TableSearch(HashTable* table, char* word) {
     assert(table && word);
 
-    uint32_t index = table->function((const uint8_t*)word, strlen(word));
-    if (index >= (table->lists[index])->lSize) return NULL;
-    return ListSearch(table->lists[index], word);
+    #ifdef SIMD_LEN
+    
+    size_t len = SimdStrlen(word);
+
+    #else 
+
+    size_t len = strlen(word);
+
+    #endif
+
+    uint32_t hash = table->function((const uint8_t*)word, len);
+    uint32_t index = hash % mod;
+
+    return ListSearch(table->lists[index], table->words, word);
 }
 
 
 void TableDestroy(HashTable* table) {
     for (size_t i = 0; i < table->nLists; i++) {
         free((table->lists[i])->array);
+        free(table->lists[i]->offsets);
         free(table->lists[i]);
     }
 
@@ -107,5 +163,6 @@ void TableDestroy(HashTable* table) {
     table->nLists = 0;
     table->function = NULL;
 
+    free(table->words);
     free(table);
 }

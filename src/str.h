@@ -8,48 +8,40 @@
 #include <x86intrin.h>
 #include <stdint.h>
 
-#define SIMD_OPT
+// #define SIMD_CMP
+// #define SIMD_LEN
 
 const char space = ' ';
 
 int ExtractWords(const char* input_file, const char* output_file);
 void ArrayOutput(const char* output_file, size_t* numbers, size_t nNumbers);
+int Strcmp(const char* str1, const char* str2);
 
 
 static inline bool SimdStrcmp(const char* str1, const char* str2) {
 
     const uint8_t *adr1 = (const uint8_t *)str1;
     const uint8_t *adr2 = (const uint8_t *)str2;
-    __m128i zeroes = _mm_setzero_si128();
 
-    while (true) {
-        __m128i word1 = _mm_loadu_si128((const __m128i *)adr1);
-        __m128i word2 = _mm_loadu_si128((const __m128i *)adr2);
+    __m256i word1 = _mm256_loadu_si256((const __m256i *)adr1);
+    __m256i word2 = _mm256_loadu_si256((const __m256i *)adr2);
 
-        uint16_t words_differ = (~(_mm_movemask_epi8(_mm_cmpeq_epi8(word1, word2)))) & 0xFFFF;
+    int words_differ = (~(_mm256_movemask_epi8(_mm256_cmpeq_epi16(word1, word2))));
 
-        uint16_t null1 = _mm_movemask_epi8(_mm_cmpeq_epi8(word1, zeroes));
-        uint16_t null2 = _mm_movemask_epi8(_mm_cmpeq_epi8(word2, zeroes));
+    if (words_differ) return 1;
 
-        uint16_t null_or_diff = null1 | null2 | words_differ;
+    return 0;
+}
 
-        if (null_or_diff) {
-            int first_zero = _tzcnt_u32(null_or_diff);
-            uint16_t first_zero_mask = (uint16_t)(1 << first_zero);
 
-            if (words_differ && first_zero_mask) return 1;
+static inline size_t SimdStrlen(const char* str) {
+    const uint8_t *adr = (const uint8_t *)str;
 
-            if ((null1 & first_zero_mask) && (null2 & first_zero_mask)) {
-                return 0;
-            }
+    __m256i zeroes = _mm256_setzero_si256();
+    __m256i word = _mm256_loadu_si256((const __m256i *)adr);
+    int null = _mm256_movemask_epi8(_mm256_cmpeq_epi16(word, zeroes));
 
-            return 1;
-        }
-
-        adr1 += 16;
-        adr2 += 16;
-
-    }
+    return (size_t)_tzcnt_u32((uint32_t)null);
 }
 
 #endif //STR_H_

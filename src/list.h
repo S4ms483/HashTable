@@ -5,6 +5,7 @@
 
 typedef struct{
     char** array;
+    size_t* offsets;
     size_t lSize;
     size_t lCapacity;
 } List;
@@ -12,7 +13,7 @@ typedef struct{
 
 List* ListInit(char** array, size_t size, size_t capacity);
 List* CreateList(const char* input_file, const char* output_file);
-char* ListSearch(List* list, const char* word);
+char* ListSearch(List* list, char* words_array, const char* word);
 bool ListAppend(List* list, char* word);
 void ListDestroy(List* list);
 

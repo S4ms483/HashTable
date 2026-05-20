@@ -28,6 +28,8 @@ uint32_t FirstLetter(const uint8_t* data, size_t len) {
 
 uint32_t WordLen(const uint8_t* data, size_t len) {
     assert(data);
+
+    (void)data;
     return (uint32_t)len;
 }
 
@@ -79,14 +81,29 @@ uint32_t CRC32(const uint8_t* data, size_t len) {
     assert(data);
     uint32_t result = 5381;
 
-    // #ifdef 
-
     for (size_t i = 0; i < len; i++) {
+        #ifdef INLINE_OPT
+    
+        uint32_t letter = data[i]; 
+
+        asm volatile (
+            "xor %1, %0\n\t"     
+            "rol $1, %0"    
+            : "+r" (result)    
+            : "r" (letter)        
+            : "cc"
+        );
+    
+        #else
+
         result = result ^ data[i];
         result = Shift(result);
+
+        #endif
     }
 
-    return (result % 4001);
+
+    return result;
 }
 
 

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#define INLINE_OPT
+
 uint32_t ZeroHash(const uint8_t* data, size_t len);
 uint32_t FirstLetter(const uint8_t* data, size_t len);
 uint32_t WordLen(const uint8_t* data, size_t len);
